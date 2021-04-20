@@ -3,6 +3,7 @@ using Random
 using Distributions
 using LinearAlgebra
 using Printf
+using BenchmarkTools
 
 include("vec3.jl")
 include("rtweekend.jl")
@@ -111,6 +112,8 @@ function main()
 
     # Render
 
+    t0 = time()
+
     @printf("P3\n%d %d\n255\n", image_width, image_height)
 
     for j = image_height-1:-1:0
@@ -127,7 +130,9 @@ function main()
         end
     end
 
-    write(stderr, "\nDone.\n")
+    t1 = time()
+
+    write(stderr, "\nDone in $(t1-t0) seconds\n")
 
 end
 
