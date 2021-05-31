@@ -1,4 +1,4 @@
-function write_color(pixel_color::color, samples_per_pixel)
+function write_color(f, pixel_color::color, samples_per_pixel)
 
     r = pixel_color.x
     g = pixel_color.y
@@ -17,9 +17,10 @@ function write_color(pixel_color::color, samples_per_pixel)
     b = sqrt(scale * b)
 
     # Write the translated [0,255] value of each color component.
-    @printf("%d %d %d\n", 
+    s = @sprintf("%d %d %d\n", 
         trunc(UInt8, 256 * clamp(r, 0.0, 0.999)),
         trunc(UInt8, 256 * clamp(g, 0.0, 0.999)),
-        trunc(UInt8, 256 * clamp(b, 0.0, 0.999)))
+        trunc(UInt8, 256 * clamp(b, 0.0, 0.999)))    
+    write(f, s)
 
 end

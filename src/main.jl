@@ -131,7 +131,7 @@ function random_scene()
     return world
 end
 
-function main(image_width)
+function main(fname, image_width)
 
     Random.seed!(123456)
 
@@ -158,10 +158,13 @@ function main(image_width)
     cam = Camera(lookfrom, lookat, vup, 20.0, aspect_ratio, aperture, dist_to_focus)
 
     # Render
+    
+    f = open(fname, "w")
+    r = Ray()
 
     t0 = time()
 
-    @printf("P3\n%d %d\n255\n", image_width, image_height)
+    write(f, "P3\n$(image_width) $(image_height)\n255\n")
 
     for j = image_height-1:-1:0
         write(stderr, "\rScanlines remaining: $(j) ")
@@ -170,10 +173,10 @@ function main(image_width)
             for s = 1:samples_per_pixel
                 u = (i + rand()) / (image_width-1)
                 v = (j + rand()) / (image_height-1)
-                r = get_ray(cam, u, v)
+                get_ray(cam, r, u, v)
                 pixel_color += ray_color(r, world, max_depth)
             end
-            write_color(pixel_color, samples_per_pixel)
+            write_color(f, pixel_color, samples_per_pixel)
         end
     end
 
@@ -183,5 +186,7 @@ function main(image_width)
 
 end
 
-#@btime main(120)
-main(120)
+const output_file = ARGS[1]
+
+@btime main($output_file, 120)
+#@time main(output_file, 120)
