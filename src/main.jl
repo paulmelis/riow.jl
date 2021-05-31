@@ -33,11 +33,58 @@ function ray_color(r::Ray, world::Vector{Hittable}, depth) ::color
         return color(0,0,0)
     end
 
+    # Return background color (which is a gradient in Y) when no scene object is hit
     unit_direction = unit_vector(r.direction)
     t = 0.5*(unit_direction.y + 1.0)
     return (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0)
 
 end
+
+# XXX not fully equivalent yet
+function ray_color_nonrecursive(r::Ray, world::Vector{Hittable}, depth) ::color
+    
+    ray = Ray()
+    ray.origin = r.origin
+    ray.direction = r.direction
+
+    final_color = color(1, 1, 1)
+    rec = HitRecord()
+    scattered = Ray()
+    attenuation = color()    
+
+    while depth > 0
+
+        if hit(world, ray, 0.001, Inf, rec)
+            if scatter(rec.mat, ray, rec, attenuation, scattered)
+                final_color *= attenuation
+
+                ray.origin = scattered.origin
+                ray.direction = scattered.direction
+
+                depth -= 1
+
+                continue
+            end
+
+            break
+        end
+
+        # Nothing hit, use background color (which is a gradient in Y)
+        unit_direction = unit_vector(ray.direction)
+        t = 0.5*(unit_direction.y + 1.0)
+        bgcolor = (1.0-t)*color(1.0, 1.0, 1.0) + t*color(0.5, 0.7, 1.0)
+        final_color *= bgcolor
+
+        break
+
+    end
+
+    # If we've exceeded the ray bounce limit, no more light is gathered.
+    return final_color    
+
+end
+
+
 
 function random_scene()
     world = Vector{Hittable}()
@@ -84,14 +131,14 @@ function random_scene()
     return world
 end
 
-function main()
+function main(image_width)
 
     Random.seed!(123456)
 
     # Image
 
     aspect_ratio = 16.0 / 9.0
-    image_width = 1200
+    #image_width = 120
     image_height = trunc(Int, image_width / aspect_ratio)
     samples_per_pixel = 10
     max_depth = 50
@@ -136,4 +183,5 @@ function main()
 
 end
 
-main()
+#@btime main(120)
+main(120)

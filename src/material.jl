@@ -38,6 +38,7 @@ function scatter(m::Metal, r_in::Ray, rec::HitRecord, attenuation::color, scatte
     attenuation.y = m.albedo.y
     attenuation.z = m.albedo.z
 
+    # XXX move the check to the beginning, so we don't compute unused values
     return dot(scattered.direction, rec.normal) > 0
 
 end
