@@ -17,18 +17,17 @@ include("color.jl")
 
 function ray_color(r::Ray, world::Vector{Hittable}, depth) ::color
 
-    rec = HitRecord()
-
     # If we've exceeded the ray bounce limit, no more light is gathered.
     if depth <= 0
         return color(0,0,0)
     end
+    
+    rec = HitRecord() 
 
     if hit(world, r, 0.001, Inf, rec)
-        scattered = Ray()
-        attenuation = color()
-        if scatter(rec.mat, r, rec, attenuation, scattered)
-            return attenuation * ray_color(scattered, world, depth-1)
+        s = ShadingInfo()
+        if scatter(rec.mat, r, rec, s)
+            return s.attenuation * ray_color(s.scattered, world, depth-1)
         end
         return color(0,0,0)
     end
@@ -49,17 +48,16 @@ function ray_color_nonrecursive(r::Ray, world::Vector{Hittable}, depth) ::color
 
     final_color = color(1, 1, 1)
     rec = HitRecord()
-    scattered = Ray()
-    attenuation = color()    
+    s = ShadingInfo()
 
     while depth > 0
 
-        if hit(world, ray, 0.001, Inf, rec)
-            if scatter(rec.mat, ray, rec, attenuation, scattered)
-                final_color *= attenuation
+        if hit(world, ray, 0.001, Inf, rec)            
+            if scatter(rec.mat, ray, rec, s)
+                final_color *= s.attenuation
 
-                ray.origin = scattered.origin
-                ray.direction = scattered.direction
+                ray.origin = s.scattered.origin
+                ray.direction = s.scattered.direction
 
                 depth -= 1
 
@@ -188,5 +186,7 @@ end
 
 const output_file = ARGS[1]
 
-@btime main($output_file, 120)
+#@btime main($output_file, 120)
 #@time main(output_file, 120)
+#main(output_file, 120)
+main(output_file, 512)

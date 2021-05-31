@@ -1,8 +1,17 @@
+mutable struct ShadingInfo
+    scattered::Ray
+    attenuation::vec3
+    
+    function ShadingInfo()
+        return new(Ray(), vec3())
+    end
+end
+
 struct Lambertian <: Material
     albedo::color
 end
 
-function scatter(m::Lambertian, r_in::Ray, rec::HitRecord, attenuation::color, scattered::Ray)
+function scatter(m::Lambertian, r_in::Ray, rec::HitRecord, s::ShadingInfo)
 
     scatter_direction = rec.normal + random_unit_vector()
 
@@ -11,12 +20,10 @@ function scatter(m::Lambertian, r_in::Ray, rec::HitRecord, attenuation::color, s
         scatter_direction = rec.normal
     end
 
-    scattered.origin = rec.p
-    scattered.direction = scatter_direction
+    s.scattered.origin = rec.p
+    s.scattered.direction = scatter_direction
 
-    attenuation.x = m.albedo.x
-    attenuation.y = m.albedo.y
-    attenuation.z = m.albedo.z
+    s.attenuation = m.albedo
 
     return true    
 end
@@ -27,19 +34,17 @@ struct Metal <: Material
     fuzz::Float64
 end
 
-function scatter(m::Metal, r_in::Ray, rec::HitRecord, attenuation::color, scattered::Ray)
+function scatter(m::Metal, r_in::Ray, rec::HitRecord, s::ShadingInfo)
 
     reflected = reflect(unit_vector(r_in.direction), rec.normal)
 
-    scattered.origin = rec.p
-    scattered.direction = reflected + m.fuzz*random_in_unit_sphere()
+    s.scattered.origin = rec.p
+    s.scattered.direction = reflected + m.fuzz*random_in_unit_sphere()
 
-    attenuation.x = m.albedo.x
-    attenuation.y = m.albedo.y
-    attenuation.z = m.albedo.z
+    s.attenuation = m.albedo
 
     # XXX move the check to the beginning, so we don't compute unused values
-    return dot(scattered.direction, rec.normal) > 0
+    return dot(s.scattered.direction, rec.normal) > 0
 
 end
 
@@ -55,11 +60,9 @@ function reflectance(cosine::Float64, ref_idx::Float64)
     return r0 + (1-r0) * (1 - cosine) ^ 5
 end
 
-function scatter(m::Dielectric, r_in::Ray, rec::HitRecord, attenuation::color, scattered::Ray)
+function scatter(m::Dielectric, r_in::Ray, rec::HitRecord, s::ShadingInfo)
 
-    attenuation.x = 1.0
-    attenuation.y = 1.0
-    attenuation.z = 1.0
+    s.attenuation = vec3(1.0, 1.0, 1.0)
 
     refraction_ratio = rec.front_face ? (1.0/m.ir) : m.ir
 
@@ -75,8 +78,8 @@ function scatter(m::Dielectric, r_in::Ray, rec::HitRecord, attenuation::color, s
         direction = refract(unit_direction, rec.normal, refraction_ratio)
     end
 
-    scattered.origin = rec.p
-    scattered.direction = direction
+    s.scattered.origin = rec.p
+    s.scattered.direction = direction
     
     return true
 

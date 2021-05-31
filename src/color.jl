@@ -21,6 +21,7 @@ function write_color(f, pixel_color::color, samples_per_pixel)
         trunc(UInt8, 256 * clamp(r, 0.0, 0.999)),
         trunc(UInt8, 256 * clamp(g, 0.0, 0.999)),
         trunc(UInt8, 256 * clamp(b, 0.0, 0.999)))    
+        
     write(f, s)
 
 end

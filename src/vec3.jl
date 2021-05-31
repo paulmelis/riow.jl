@@ -1,6 +1,6 @@
 import Base.+, Base.-, Base.*, Base.^
 
-mutable struct vec3 <: FieldVector{3, Float64}
+struct vec3 <: FieldVector{3, Float64}
     x::Float64
     y::Float64
     z::Float64
@@ -26,8 +26,9 @@ end
     v.x*w.y - v.y*w.x
 )
 
-color = vec3
-point3 = vec3
+# If not marked const will cause allocations
+const color = vec3
+const point3 = vec3
 
 unit_vector(v::vec3) = v / norm(v)
 #normalized(v::vec3) = v / norm(v)
