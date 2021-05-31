@@ -22,9 +22,9 @@ function ray_color(r::Ray, world::Vector{Hittable}, depth) ::color
         return color(0,0,0)
     end
     
-    rec = HitRecord() 
+    rec = hit(world, r, 0.001, Inf)
 
-    if hit(world, r, 0.001, Inf, rec)
+    if rec != nothing
         s = ShadingInfo()
         if scatter(rec.mat, r, rec, s)
             return s.attenuation * ray_color(s.scattered, world, depth-1)
@@ -188,5 +188,5 @@ const output_file = ARGS[1]
 
 #@btime main($output_file, 120)
 #@time main(output_file, 120)
-#main(output_file, 120)
-main(output_file, 512)
+main(output_file, 120)
+#main(output_file, 512)

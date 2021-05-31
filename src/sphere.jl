@@ -7,7 +7,7 @@ struct Sphere <: Hittable
     Sphere(center, radius, mat) = new(center, radius, mat)
 end
 
-function hit(s::Sphere, r::Ray, t_min::Float64, t_max::Float64, rec::HitRecord)
+function hit(s::Sphere, r::Ray, t_min::Float64, t_max::Float64) ::Union{HitRecord,Nothing}
 
     oc = r.origin - s.center
     a = length_squared(r.direction)
@@ -16,7 +16,7 @@ function hit(s::Sphere, r::Ray, t_min::Float64, t_max::Float64, rec::HitRecord)
 
     discriminant = half_b*half_b - a*c
     if discriminant < 0 
-        return false
+        return nothing
     end
     sqrtd = sqrt(discriminant)
 
@@ -25,16 +25,15 @@ function hit(s::Sphere, r::Ray, t_min::Float64, t_max::Float64, rec::HitRecord)
     if root < t_min || t_max < root
         root = (-half_b + sqrtd) / a
         if root < t_min || t_max < root
-            return false
+            return nothing
         end
     end
 
-    rec.t = root
-    rec.p = at(r, rec.t)
-    outward_normal = (rec.p - s.center) / s.radius
-    set_face_normal!(rec, r, outward_normal)
-    rec.mat = s.mat
-
-    return true
+    t = root
+    p = at(r, t)
+    n = (p - s.center) / s.radius
+    outward_normal = (p - s.center) / s.radius
+    
+    return HitRecord(r, p, outward_normal, s.mat, t)
 
 end
