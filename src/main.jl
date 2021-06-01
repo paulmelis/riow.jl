@@ -4,8 +4,8 @@ using Distributions
 using LinearAlgebra
 using Printf
 using BenchmarkTools
-using Profile
 using ArgParse
+using Profile
 
 include("vec3.jl")
 include("rtweekend.jl")
@@ -114,7 +114,7 @@ function random_scene()
             end
         end
     end
-    
+
     material1 = Dielectric(1.5)
     push!(world, Sphere(point3(0, 1, 0), 1.0, material1))
 
@@ -128,6 +128,8 @@ function random_scene()
 end
 
 function main(fname, image_width, image_height, samples, max_depth)
+
+    t0 = time()
 
     Random.seed!(123456)
 
@@ -153,8 +155,6 @@ function main(fname, image_width, image_height, samples, max_depth)
     
     f = open(fname, "w")
 
-    t0 = time()
-
     write(f, "P3\n$(image_width) $(image_height)\n255\n")
 
     for j = image_height-1:-1:0
@@ -174,7 +174,7 @@ function main(fname, image_width, image_height, samples, max_depth)
 
     t1 = time()
 
-    write(stderr, "\nDone in $(t1-t0) seconds\n")
+    write(stderr, "\nDone in $(t1-t0) seconds (including compilation)\n")
 
 end
 
@@ -194,9 +194,12 @@ function parse_commandline()
             help = "Path depth"
             arg_type = Int
             default = 5
+        "--profile", "-p"
+            help = "Run under profiler"
+            action = :store_true            
         "filename"
             help = "Output image"
-            default = "doh.ppm"
+            default = "image.ppm"
             required = false
     end
 
@@ -223,4 +226,11 @@ depth = parsed_args["depth"]
 #Profile.clear_malloc_data()
 #main(output_file, 40)
 
-main(output_file, width, height, samples, depth)
+if parsed_args["profile"]    
+    @profile main(output_file, width, height, samples, depth)
+    open("profile.txt", "w") do f
+        Profile.print(f, format=:flat, sortedby=:count)
+    end
+else
+    main(output_file, width, height, samples, depth)
+end
