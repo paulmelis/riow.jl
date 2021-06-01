@@ -196,6 +196,12 @@ function parse_commandline()
             default = 5
         "--profile", "-p"
             help = "Run under profiler"
+            action = :store_true       
+         "--time", "-t"
+            help = "Run under @time"
+            action = :store_true            
+        "--btime", "-b"
+            help = "Run under @btime"
             action = :store_true            
         "filename"
             help = "Output image"
@@ -230,7 +236,13 @@ if parsed_args["profile"]
     @profile main(output_file, width, height, samples, depth)
     open("profile.txt", "w") do f
         Profile.print(f, format=:flat, sortedby=:count)
+        println(f)
+        Profile.print(f, format=:flat, sortedby=:overhead)
     end
+elseif parsed_args["btime"]
+    @btime main(output_file, width, height, samples, depth)
+elseif parsed_args["time"]
+    @time main(output_file, width, height, samples, depth)
 else
     main(output_file, width, height, samples, depth)
 end
