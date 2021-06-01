@@ -43,10 +43,13 @@ struct Camera
 end
 
 
-function get_ray(c::Camera, r::Ray, s::Float64, t::Float64)
+function get_ray(c::Camera, s::Float64, t::Float64)
     rd = c.lens_radius * random_in_unit_disk()
     offset = c.u * rd.x + c.v * rd.y
-    r.origin = c.origin + offset
-    r.direction = c.lower_left_corner + s*c.horizontal + t*c.vertical - c.origin - offset
-    r.time = random_double(c.time0, c.time1)
+    
+    origin = c.origin + offset
+    direction = c.lower_left_corner + s*c.horizontal + t*c.vertical - c.origin - offset
+    t = random_double(c.time0, c.time1)
+
+    return Ray(origin, direction, t)
 end

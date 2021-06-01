@@ -1,17 +1,13 @@
-mutable struct ShadingInfo
+struct ShadingInfo
     scattered::Ray
     attenuation::vec3
-    
-    function ShadingInfo()
-        return new(Ray(), vec3())
-    end
 end
 
-struct Lambertian <: Material
+struct Lambertian
     albedo::color
 end
 
-function scatter(m::Lambertian, r_in::Ray, rec::HitRecord, s::ShadingInfo)
+function scatter(m::Lambertian, r_in::Ray, rec) ::Union{ShadingInfo,Nothing}
 
     scatter_direction = rec.normal + random_unit_vector()
 
@@ -20,36 +16,36 @@ function scatter(m::Lambertian, r_in::Ray, rec::HitRecord, s::ShadingInfo)
         scatter_direction = rec.normal
     end
 
-    s.scattered.origin = rec.p
-    s.scattered.direction = scatter_direction
+    return ShadingInfo(
+        Ray(rec.p, scatter_direction),
+        m.albedo)
 
-    s.attenuation = m.albedo
-
-    return true    
 end
 
 
-struct Metal <: Material
+struct Metal
     albedo::color
     fuzz::Float64
 end
 
-function scatter(m::Metal, r_in::Ray, rec::HitRecord, s::ShadingInfo)
+function scatter(m::Metal, r_in::Ray, rec) ::Union{ShadingInfo,Nothing}
 
     reflected = reflect(unit_vector(r_in.direction), rec.normal)
-
-    s.scattered.origin = rec.p
-    s.scattered.direction = reflected + m.fuzz*random_in_unit_sphere()
-
-    s.attenuation = m.albedo
+    direction = reflected + m.fuzz*random_in_unit_sphere()
 
     # XXX move the check to the beginning, so we don't compute unused values
-    return dot(s.scattered.direction, rec.normal) > 0
+    if dot(direction, rec.normal) <= 0
+        return nothing
+    end
+
+    return ShadingInfo(
+        Ray(rec.p, direction),
+        m.albedo)
 
 end
 
 
-struct Dielectric <: Material
+struct Dielectric
     ir::Float64     # Index of Refraction
 end
 
@@ -60,9 +56,7 @@ function reflectance(cosine::Float64, ref_idx::Float64)
     return r0 + (1-r0) * (1 - cosine) ^ 5
 end
 
-function scatter(m::Dielectric, r_in::Ray, rec::HitRecord, s::ShadingInfo)
-
-    s.attenuation = vec3(1.0, 1.0, 1.0)
+function scatter(m::Dielectric, r_in::Ray, rec) ::Union{ShadingInfo,Nothing}
 
     refraction_ratio = rec.front_face ? (1.0/m.ir) : m.ir
 
@@ -78,9 +72,10 @@ function scatter(m::Dielectric, r_in::Ray, rec::HitRecord, s::ShadingInfo)
         direction = refract(unit_direction, rec.normal, refraction_ratio)
     end
 
-    s.scattered.origin = rec.p
-    s.scattered.direction = direction
-    
-    return true
+    return ShadingInfo(
+        Ray(rec.p, direction),
+        vec3(1.0, 1.0, 1.0))
 
 end
+
+const Material = Union{Lambertian, Metal, Dielectric}

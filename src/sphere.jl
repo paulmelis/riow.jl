@@ -1,4 +1,4 @@
-struct Sphere <: Hittable
+struct Sphere
     center::point3
     radius::Float64
     mat::Material

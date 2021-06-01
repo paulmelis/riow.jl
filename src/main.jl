@@ -4,16 +4,17 @@ using Distributions
 using LinearAlgebra
 using Printf
 using BenchmarkTools
+using Profile
 
 include("vec3.jl")
 include("rtweekend.jl")
 include("ray.jl")
-include("hitrecord.jl")
 include("material.jl")
-include("hittable.jl")
-include("sphere.jl")
-include("camera.jl")
+include("hitrecord.jl")
 include("color.jl")
+include("camera.jl")
+include("sphere.jl")
+include("hittable.jl")
 
 function ray_color(r::Ray, world::Vector{Hittable}, depth) ::color
 
@@ -24,9 +25,9 @@ function ray_color(r::Ray, world::Vector{Hittable}, depth) ::color
     
     rec = hit(world, r, 0.001, Inf)
 
-    if rec != nothing
-        s = ShadingInfo()
-        if scatter(rec.mat, r, rec, s)
+    if rec != nothing        
+        s = scatter(rec.mat, r, rec)
+        if s != nothing
             return s.attenuation * ray_color(s.scattered, world, depth-1)
         end
         return color(0,0,0)
@@ -42,22 +43,19 @@ end
 # XXX not fully equivalent yet
 function ray_color_nonrecursive(r::Ray, world::Vector{Hittable}, depth) ::color
     
-    ray = Ray()
-    ray.origin = r.origin
-    ray.direction = r.direction
+    # Need copy as we're modifying it
+    ray = Ray(r.origin, r.direction)
 
     final_color = color(1, 1, 1)
-    rec = HitRecord()
-    s = ShadingInfo()
-
     while depth > 0
 
-        if hit(world, ray, 0.001, Inf, rec)            
-            if scatter(rec.mat, ray, rec, s)
+        rec = hit(world, ray, 0.001, Inf)
+        if rec != nothing
+            s = scatter(rec.mat, ray, rec) 
+            if s != nothing
                 final_color *= s.attenuation
 
-                ray.origin = s.scattered.origin
-                ray.direction = s.scattered.direction
+                ray = Ray(s.scattered.origin, s.scattered.direction)
 
                 depth -= 1
 
@@ -129,15 +127,13 @@ function random_scene()
     return world
 end
 
-function main(fname, image_width)
+function main(fname, image_width, image_height)
 
     Random.seed!(123456)
 
     # Image
 
-    aspect_ratio = 16.0 / 9.0
-    #image_width = 120
-    image_height = trunc(Int, image_width / aspect_ratio)
+    aspect_ratio = image_width / image_height
     samples_per_pixel = 10
     max_depth = 50
 
@@ -158,7 +154,6 @@ function main(fname, image_width)
     # Render
     
     f = open(fname, "w")
-    r = Ray()
 
     t0 = time()
 
@@ -171,8 +166,9 @@ function main(fname, image_width)
             for s = 1:samples_per_pixel
                 u = (i + rand()) / (image_width-1)
                 v = (j + rand()) / (image_height-1)
-                get_ray(cam, r, u, v)
+                r = get_ray(cam, u, v)
                 pixel_color += ray_color(r, world, max_depth)
+                #pixel_color += ray_color_nonrecursive(r, world, max_depth)                
             end
             write_color(f, pixel_color, samples_per_pixel)
         end
@@ -184,9 +180,20 @@ function main(fname, image_width)
 
 end
 
+#using InteractiveUtils
+#code_warntype(hit, (Vector{Hittable}, Ray, Float64, Float64))
+#doh()
+
 const output_file = ARGS[1]
+const width = parse(Int, ARGS[2])
+const height = parse(Int, ARGS[3])
 
 #@btime main($output_file, 120)
 #@time main(output_file, 120)
-main(output_file, 120)
-#main(output_file, 512)
+#@time main(output_file, 40)
+
+#main(output_file, 40)
+#Profile.clear_malloc_data()
+#main(output_file, 40)
+
+main(output_file, width, height)

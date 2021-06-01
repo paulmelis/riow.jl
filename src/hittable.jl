@@ -1,4 +1,4 @@
-abstract type Hittable end
+const Hittable = Union{Sphere}
 
 function hit(objects::Vector{Hittable}, r::Ray, t_min::Float64, t_max::Float64) ::Union{HitRecord,Nothing}
 
