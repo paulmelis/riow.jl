@@ -5,6 +5,7 @@ using LinearAlgebra
 using Printf
 using BenchmarkTools
 using Profile
+using ArgParse
 
 include("vec3.jl")
 include("rtweekend.jl")
@@ -81,7 +82,6 @@ function ray_color_nonrecursive(r::Ray, world::Vector{Hittable}, depth) ::color
 end
 
 
-
 function random_scene()
     world = Vector{Hittable}()
 
@@ -127,15 +127,13 @@ function random_scene()
     return world
 end
 
-function main(fname, image_width, image_height)
+function main(fname, image_width, image_height, samples, max_depth)
 
     Random.seed!(123456)
 
     # Image
 
     aspect_ratio = image_width / image_height
-    samples_per_pixel = 10
-    max_depth = 50
 
     # World
 
@@ -163,14 +161,14 @@ function main(fname, image_width, image_height)
         write(stderr, "\rScanlines remaining: $(j) ")
         for i = 0:image_width-1
             pixel_color = color(0,0,0)
-            for s = 1:samples_per_pixel
+            for s = 1:samples
                 u = (i + rand()) / (image_width-1)
                 v = (j + rand()) / (image_height-1)
                 r = get_ray(cam, u, v)
                 pixel_color += ray_color(r, world, max_depth)
                 #pixel_color += ray_color_nonrecursive(r, world, max_depth)                
             end
-            write_color(f, pixel_color, samples_per_pixel)
+            write_color(f, pixel_color, samples)
         end
     end
 
@@ -180,13 +178,42 @@ function main(fname, image_width, image_height)
 
 end
 
+function parse_commandline()
+
+    s = ArgParseSettings()
+
+    @add_arg_table s begin
+        "--resolution", "-r"
+            help = "Image resolution, <w>x<h>"
+            default = "320x240"
+        "--samples", "-s"
+            help = "Samples per pixel"
+            arg_type = Int
+            default = 10
+        "--depth", "-d"
+            help = "Path depth"
+            arg_type = Int
+            default = 5
+        "filename"
+            help = "Output image"
+            default = "doh.ppm"
+            required = false
+    end
+
+    return parse_args(s)
+
+end
+
+parsed_args = parse_commandline()
+
 #using InteractiveUtils
 #code_warntype(hit, (Vector{Hittable}, Ray, Float64, Float64))
 #doh()
 
-const output_file = ARGS[1]
-const width = parse(Int, ARGS[2])
-const height = parse(Int, ARGS[3])
+output_file = parsed_args["filename"]
+width, height = parse.(Int, split(parsed_args["resolution"], 'x'))
+samples = parsed_args["samples"]
+depth = parsed_args["depth"]
 
 #@btime main($output_file, 120)
 #@time main(output_file, 120)
@@ -196,4 +223,4 @@ const height = parse(Int, ARGS[3])
 #Profile.clear_malloc_data()
 #main(output_file, 40)
 
-main(output_file, width, height)
+main(output_file, width, height, samples, depth)
