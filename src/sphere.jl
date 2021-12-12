@@ -29,11 +29,10 @@ function hit(s::Sphere, r::Ray, t_min::Float64, t_max::Float64) ::Union{HitRecor
         end
     end
 
-    t = root
-    p = at(r, t)
+    p = at(r, root)
     n = (p - s.center) / s.radius
     outward_normal = (p - s.center) / s.radius
     
-    return HitRecord(r, p, outward_normal, s.mat, t)
+    return HitRecord(r, p, outward_normal, s.mat, root)
 
 end

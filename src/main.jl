@@ -6,6 +6,8 @@ using Printf
 using BenchmarkTools
 using ArgParse
 using Profile
+using ProfileView
+using LoopVectorization
 
 include("vec3.jl")
 include("rtweekend.jl")
@@ -233,11 +235,16 @@ depth = parsed_args["depth"]
 #main(output_file, 40)
 
 if parsed_args["profile"]    
+    @profview main(output_file, width, height, samples, depth)
+    @profview main(output_file, width, height, samples, depth)
+    if false
     @profile main(output_file, width, height, samples, depth)
+
     open("profile.txt", "w") do f
         Profile.print(f, format=:flat, sortedby=:count)
         println(f)
         Profile.print(f, format=:flat, sortedby=:overhead)
+    end
     end
 elseif parsed_args["btime"]
     @btime main(output_file, width, height, samples, depth)

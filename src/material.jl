@@ -33,7 +33,6 @@ function scatter(m::Metal, r_in::Ray, rec) ::Union{ShadingInfo,Nothing}
     reflected = reflect(unit_vector(r_in.direction), rec.normal)
     direction = reflected + m.fuzz*random_in_unit_sphere()
 
-    # XXX move the check to the beginning, so we don't compute unused values
     if dot(direction, rec.normal) <= 0
         return nothing
     end
