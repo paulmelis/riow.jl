@@ -176,7 +176,7 @@ function main(fname, image_width, image_height, samples, max_depth)
 
     t1 = time()
 
-    write(stderr, "\nDone in $(t1-t0) seconds (including compilation)\n")
+    write(stderr, "\nDone in $(t1-t0) seconds\n")
 
 end
 
@@ -187,7 +187,7 @@ function parse_commandline()
     @add_arg_table s begin
         "--resolution", "-r"
             help = "Image resolution, <w>x<h>"
-            default = "320x240"
+            default = "1200x675"
         "--samples", "-s"
             help = "Samples per pixel"
             arg_type = Int
@@ -195,9 +195,12 @@ function parse_commandline()
         "--depth", "-d"
             help = "Path depth"
             arg_type = Int
-            default = 5
+            default = 50
         "--profile", "-p"
             help = "Run under profiler"
+            action = :store_true       
+        "--malloc-data", "-m"
+            help = "Track allocations"
             action = :store_true       
          "--time", "-t"
             help = "Run under @time"
@@ -215,41 +218,42 @@ function parse_commandline()
 
 end
 
-parsed_args = parse_commandline()
+if (!isinteractive())
 
-#using InteractiveUtils
-#code_warntype(hit, (Vector{Hittable}, Ray, Float64, Float64))
-#doh()
+    parsed_args = parse_commandline()
 
-output_file = parsed_args["filename"]
-width, height = parse.(Int, split(parsed_args["resolution"], 'x'))
-samples = parsed_args["samples"]
-depth = parsed_args["depth"]
+    #using InteractiveUtils
+    #code_warntype(hit, (Vector{Hittable}, Ray, Float64, Float64))
+    #doh()
 
-#@btime main($output_file, 120)
-#@time main(output_file, 120)
-#@time main(output_file, 40)
+    output_file = parsed_args["filename"]
+    width, height = parse.(Int, split(parsed_args["resolution"], 'x'))
+    samples = parsed_args["samples"]
+    depth = parsed_args["depth"]
 
-#main(output_file, 40)
-#Profile.clear_malloc_data()
-#main(output_file, 40)
+    if parsed_args["profile"]
+        println("Running under profiler")
+        #@profview main(output_file, width, height, samples, depth)
+        @profile main(output_file, width, height, samples, depth)
 
-if parsed_args["profile"]    
-    @profview main(output_file, width, height, samples, depth)
-    @profview main(output_file, width, height, samples, depth)
-    if false
-    @profile main(output_file, width, height, samples, depth)
-
-    open("profile.txt", "w") do f
-        Profile.print(f, format=:flat, sortedby=:count)
-        println(f)
-        Profile.print(f, format=:flat, sortedby=:overhead)
+        open("profile.txt", "w") do f
+            Profile.print(f, format=:flat, sortedby=:count)
+            println(f)
+            Profile.print(f, format=:flat, sortedby=:overhead)
+        end
+    elseif parsed_args["btime"]
+        println("Running under @btime")
+        @btime main(output_file, width, height, samples, depth)
+    elseif parsed_args["time"]
+        println("Running under @time")
+        @time main(output_file, width, height, samples, depth)
+    elseif parsed_args["malloc-data"]
+        println("Gathering malloc data (running twice), but don't forget --track-allocation=user")
+        main(output_file, width, height, samples, depth)
+        Profile.clear_malloc_data()
+        main(output_file, width, height, samples, depth)
+    else
+        main(output_file, width, height, samples, depth)
     end
-    end
-elseif parsed_args["btime"]
-    @btime main(output_file, width, height, samples, depth)
-elseif parsed_args["time"]
-    @time main(output_file, width, height, samples, depth)
-else
-    main(output_file, width, height, samples, depth)
+
 end

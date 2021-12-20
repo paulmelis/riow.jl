@@ -8,6 +8,13 @@ packaging).
 
 Plus, there's probably a lot of optimizations that can still be done.
 
+Comparison with the C++ version:
+
+* 1200x675 pixels, 10 samples per pixel, max ray depth 50
+* Time to render on a Intel Core i5-4460 @ 3.20GHz:
+    * C++: 59.354s
+    * Julia 1.7: 83.867s (`@btime`, i.e. excluding time for compilation)
+
 ## Notes
 
 * Fairly straight-forward port from the C++ code, but with some 
