@@ -1,7 +1,6 @@
 # Ray-tracing in One Weekend
 
-A Julia implementation of Peter Shirley's "Ray Tracing in One Weekend" 
-(https://raytracing.github.io/books/RayTracingInOneWeekend.html).
+A Julia implementation of Peter Shirley's [*Ray Tracing in One Weekend*](https://raytracing.github.io/books/RayTracingInOneWeekend.html).
 
 Note that this was one of my first projects in Julia, 
 hence not everything follows conventions (especially w.r.t. 
