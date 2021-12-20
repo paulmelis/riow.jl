@@ -237,9 +237,9 @@ if (!isinteractive())
         @profile main(output_file, width, height, samples, depth)
 
         open("profile.txt", "w") do f
-            Profile.print(f, format=:flat, sortedby=:count)
-            println(f)
-            Profile.print(f, format=:flat, sortedby=:overhead)
+            #Profile.print(IOContext(f, :displaysize => (24, 500)), format=:tree, sortedby=:count)
+            Profile.print(IOContext(f, :displaysize => (24, 500)), format=:flat, sortedby=:count)
+            #Profile.print(IOContext(f, :displaysize => (24, 500)), format=:flat, sortedby=:overhead)
         end
     elseif parsed_args["btime"]
         println("Running under @btime")
