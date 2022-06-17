@@ -1,4 +1,7 @@
-function random_scene()
+function random_scene(seed=123456)
+
+    Random.seed!(seed)
+
     world = Vector{Hittable}()
 
     ground_material = Lambertian(color(0.5, 0.5, 0.5))
