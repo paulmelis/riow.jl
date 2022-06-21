@@ -9,7 +9,7 @@ using Printf
 using BenchmarkTools
 using ArgParse
 using Profile
-using ProfileView
+#using ProfileView
 using LoopVectorization
 
 include("vec3.jl")

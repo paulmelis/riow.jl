@@ -11,6 +11,7 @@ using LoopVectorization
 using ResumableFunctions
 using ProgressMeter
 using MPI
+using Colors
 
 include("vec3.jl")
 include("rtweekend.jl")
@@ -25,7 +26,7 @@ include("scene.jl")
 include("raycolor.jl")
 include("buckets.jl")
 
-function root(comm, fname, image_width, image_height, samples, max_depth, bucket_size)
+function root(comm, fname, image_width, image_height, samples, max_depth, bucket_size, color_by_rank)
 
     num_workers = MPI.Comm_size(comm) - 1
     println("[0] Have $(num_workers) worker processes")
@@ -55,7 +56,8 @@ function root(comm, fname, image_width, image_height, samples, max_depth, bucket
         vup = vec3(0,1,0),
         vfov = 20.0,
         dist_to_focus = 10.0,
-        aperture = 0.1
+        aperture = 0.1,
+        color_by_rank = color_by_rank
     )    
 
     # Send config to workers
@@ -182,11 +184,12 @@ function worker(comm, rank)
     cam = Camera(config.lookfrom, config.lookat, config.vup, 
         config.vfov, config.aspect_ratio, config.aperture, config.dist_to_focus)
 
-    samples::Int = config.samples
-    max_depth::Int = config.max_depth
-    image_width::Int = config.image_width
-    image_height::Int = config.image_height
-    max_bucket_size::Int = config.bucket_size
+    samples = config.samples
+    max_depth = config.max_depth
+    image_width = config.image_width
+    image_height = config.image_height
+    max_bucket_size = config.bucket_size
+    color_by_rank = config.color_by_rank
 
     # Set up our local copy of the scene
     # XXX base on seed from root?
@@ -196,6 +199,9 @@ function worker(comm, rank)
     # Repeatedly wait for bucket and render it
 
     pixels = Array{Float64}(undef, max_bucket_size, max_bucket_size, 3)
+
+    hue = rank / MPI.Comm_size(comm) * 360
+    col = convert(RGB, HSV(hue, 0.8, 0.8))
 
     bucket, status = MPI.recv(0, 0, comm)
     #println("[$(rank)] Got $(bucket), $(status)")
@@ -219,6 +225,12 @@ function worker(comm, rank)
                 pixels[j+1,i+1,2] = pixel_color.y
                 pixels[j+1,i+1,3] = pixel_color.z
             end
+        end
+
+        if color_by_rank
+            pixels[:,:,1] *= col.r
+            pixels[:,:,2] *= col.g
+            pixels[:,:,3] *= col.b
         end
 
         # Return bucket pixels        
@@ -261,6 +273,9 @@ function parse_commandline()
             help = "Bucket size"
             arg_type = Int
             default = 20
+        "--rankcolor", "-c"
+            help = "Color by rank"
+            action = :store_true            
         "filename"
             help = "Output image"
             default = "image.ppm"
@@ -288,8 +303,9 @@ if (!isinteractive())
         samples = parsed_args["samples"]
         depth = parsed_args["depth"]
         bucket_size = parsed_args["bucket"]
+        color_by_rank = parsed_args["rankcolor"]
 
-        root(comm, output_file, width, height, samples, depth, bucket_size)
+        root(comm, output_file, width, height, samples, depth, bucket_size, color_by_rank)
     else
         worker(comm, rank)
     end
